@@ -57,7 +57,8 @@ def main():
     if not args:
         sys.exit("用法：python scripts/storyboard_table.py 03 [--xlsx]")
     ep = args[0]
-    files = list(SRC.glob(f"第{int(ep):02d}_*分镜*.md")) + list(SRC.glob(f"第{ep}_*分镜*.md"))
+    n = f"{int(ep):02d}"
+    files = list(SRC.glob(f"第{n}集_*分镜*.md"))
     if not files:
         sys.exit(f"未找到第{ep}集分镜文件（03_分镜/ 下）")
     rows = parse(files[0], ep.zfill(2))

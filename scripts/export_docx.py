@@ -23,9 +23,10 @@ def pick_files(argv):
         return sorted(SRC.glob("第*.md"))
     picked = []
     for num in argv:
-        m = list(SRC.glob(f"第{int(num):02d}_*.md")) + list(SRC.glob(f"第{num}_*.md"))
+        n = f"{int(num):02d}"
+        m = list(SRC.glob(f"第{n}集_*.md"))
         if not m:
-            print(f"[警告] 未找到第{num}集剧本")
+            print(f"[警告] 未找到第{num}集剧本（应为 02_剧本/第{n}集_集名.md）")
         picked += m
     return sorted(picked)
 
@@ -68,7 +69,7 @@ def md_to_docx(md_path: Path, docx_path: Path):
                 r1.bold = True
                 r2 = p.add_run("：")
                 r2.bold = True
-                p.add_run(m.group(3))
+                p.add_run(m.group(2))
             else:
                 p.add_run(s.strip())
     doc.save(str(docx_path))
