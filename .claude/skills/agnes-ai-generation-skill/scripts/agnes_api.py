@@ -12,6 +12,7 @@ import time
 import urllib.parse
 import urllib.error
 import urllib.request
+from pathlib import Path
 from typing import Any
 
 
@@ -20,6 +21,26 @@ TEXT_MODEL = "agnes-3.0-flash"
 IMAGE_MODEL = "agnes-image-2.5-flash"
 VIDEO_MODEL = "agnes-video-2.5-flash"
 SIZE_RE = re.compile(r"^[1-9]\d*x[1-9]\d*$")
+
+
+def _load_env_file() -> None:
+    """从项目根目录的 .env 读取 AGNES_API_KEY（若设置过环境变量则优先用环境变量）。"""
+    # 脚本位于 <root>/.claude/skills/agnes-ai-generation-skill/scripts/agnes_api.py
+    here = Path(__file__).resolve()
+    root_env = here.parent.parent.parent.parent.parent / ".env"
+    if not root_env.exists():
+        return
+    for line in root_env.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        k, v = k.strip(), v.strip().strip('"').strip("'")
+        if k and not os.environ.get(k):
+            os.environ[k] = v
+
+
+_load_env_file()
 
 
 def get_api_key() -> str:
