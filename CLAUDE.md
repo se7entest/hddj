@@ -1,0 +1,40 @@
+# 《狐渡》第一季 · 创作项目说明（CLAUDE.md）
+
+本文件是给 AI 助手（Claude Code）阅读的项目约定。每次会话我会自动加载它。
+
+## 项目简介
+- 类型：短剧，共 **第一季**，每集时长目标 **约 2–3 分钟**
+- 语言：**全程简体中文**（用户偏好，已记入记忆）
+- 核心产出：剧本（Markdown 为主格式）→ 批量导出 Word（.docx）投稿用
+
+## 目录结构约定
+```
+01_大纲/        # 世界观、人物小传、季/集大纲
+02_剧本/        # 分集剧本，命名：第XX集_集名.md
+03_分镜/        # 分镜脚本，命名：第XX集_分镜.md，可用 scripts 生成表格
+04_资产清单/    # 场景/道具/服化道/配音需求清单
+05_输出/        # 导出的 Word、视频、音频成品（不纳入 git）
+scripts/        # 辅助 Python 脚本
+```
+
+## 剧本格式约定（Markdown）
+```markdown
+# 第01集 · 集名
+
+## 场1 · 场景地点 · 日/夜 · 内/外
+（动作/画面描述）
+角色名（情绪/动作提示）：台词内容
+```
+
+## 常用命令
+| 任务 | 命令 |
+|---|---|
+| 导出全部剧本为 Word | `python scripts/export_docx.py` |
+| 导出指定集 | `python scripts/export_docx.py 03` |
+| 分镜表生成（CSV→Excel/表格） | `python scripts/storyboard_table.py 03` |
+| 统计全季字数/场次 | `python scripts/check_drafts.py` |
+| 查看版本历史 | `git log --oneline` |
+
+## 版本管理约定
+- 每次"重大修改"（新完成一集、大改大纲）前先 `git add -A && git commit`
+- `05_输出/` 已加入 .gitignore，成品文件不入库
