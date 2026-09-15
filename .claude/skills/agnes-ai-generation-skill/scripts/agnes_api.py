@@ -256,7 +256,7 @@ def video_lookup_id(data: dict[str, Any]) -> tuple[str | None, str | None]:
 
 
 def retrieve_video(identifier: str, model_name: str | None = VIDEO_MODEL) -> dict[str, Any]:
-    if identifier.startswith("video_"):
+    if identifier.startswith(("video_", "task_")):
         query = {"video_id": identifier}
         if model_name:
             query["model_name"] = model_name
@@ -348,10 +348,11 @@ def video_payload(args: argparse.Namespace) -> dict[str, Any]:
         "model": VIDEO_MODEL,
         "prompt": prompt,
     }
+    # 2026-09-15 live probes: gateway rejects num_frames (forbidden field) and
+    # every mode except "keyframe" when an image anchors the shot.
     for name in (
         "height",
         "width",
-        "num_frames",
         "frame_rate",
         "num_inference_steps",
         "seed",
@@ -360,15 +361,22 @@ def video_payload(args: argparse.Namespace) -> dict[str, Any]:
         value = getattr(args, name)
         if value is not None:
             payload[name] = value
-    if args.mode:
-        payload["mode"] = args.mode
     if args.image:
-        if len(args.image) == 1 and args.mode != "keyframes":
+        if args.mode in ("keyframe", "keyframes"):
+            payload["mode"] = "keyframe"
+            payload["first_frame"] = args.image[0]
+            if len(args.image) > 1:
+                payload["last_frame"] = args.image[1]
+        elif args.mode:
+            payload["mode"] = args.mode
             payload["image"] = args.image[0]
         else:
-            payload["extra_body"] = {"image": args.image}
-            if args.mode:
-                payload["extra_body"]["mode"] = args.mode
+            payload["mode"] = "keyframe"
+            payload["first_frame"] = args.image[0]
+            if len(args.image) > 1:
+                payload["last_frame"] = args.image[1]
+    else:
+        payload["mode"] = "keyframe"
     return payload
 
 
@@ -604,18 +612,21 @@ def cmd_smoke_test(args: argparse.Namespace) -> None:
     for key, value in (
         ("height", args.video_height),
         ("width", args.video_width),
-        ("num_frames", args.video_num_frames),
         ("frame_rate", args.video_frame_rate),
     ):
         if value is not None:
             video_common[key] = value
     video_results = {}
     if "text-to-video" in selected_cases:
+        # Gateway only accepts mode="keyframe" and anchors it with a first_frame image;
+        # a text-only shot is not supported, so anchor with the generated image.
         video_results["text_to_video"] = create_video_case(
             "video-text-to-video",
             {
                 **video_common,
                 "prompt": "A simple cinematic shot of a red square gently moving on a white background",
+                "mode": "keyframe",
+                "first_frame": generated_image_url,
             },
             args,
         )
@@ -625,7 +636,8 @@ def cmd_smoke_test(args: argparse.Namespace) -> None:
             {
                 **video_common,
                 "prompt": "Animate the icon with subtle floating motion, stable centered composition",
-                "image": generated_image_url,
+                "mode": "keyframe",
+                "first_frame": generated_image_url,
             },
             args,
         )
@@ -637,7 +649,9 @@ def cmd_smoke_test(args: argparse.Namespace) -> None:
             {
                 **video_common,
                 "prompt": "Create a smooth transformation from the first icon to the second icon, stable centered composition",
-                "extra_body": {"image": [generated_image_url, edited_image_url]},
+                "mode": "keyframe",
+                "first_frame": generated_image_url,
+                "last_frame": edited_image_url,
             },
             args,
         )
@@ -649,7 +663,9 @@ def cmd_smoke_test(args: argparse.Namespace) -> None:
             {
                 **video_common,
                 "prompt": "Create a smooth keyframe transition between the two icons, stable centered composition",
-                "extra_body": {"image": [generated_image_url, edited_image_url], "mode": "keyframes"},
+                "mode": "keyframe",
+                "first_frame": generated_image_url,
+                "last_frame": edited_image_url,
             },
             args,
         )

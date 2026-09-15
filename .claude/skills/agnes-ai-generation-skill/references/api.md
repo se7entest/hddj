@@ -63,43 +63,37 @@ Legacy task endpoint: `GET /v1/videos/{task_id}`
 
 Model: `agnes-video-2.5-flash`
 
-The video API is asynchronous. Create a task, then retrieve or poll by the returned `video_id` when present. Fall back to `task_id` only for older responses.
+Live behavior confirmed by probing (2026-09-15) — treat these as authoritative over the older notes below:
 
-Use English prompts for video generation whenever possible. If the user prompt is not English, translate it to English first, preserving subject, action, scene, camera movement, lighting, style, and constraints.
+- `mode` is REQUIRED. The gateway only accepts `mode="keyframe"`. All other values (`i2v`, `ti2vid`, `keyframes`, `t2v`, `video`, …) return `400 invalid mode`.
+- `keyframe` mode requires `first_frame` and/or `last_frame` (image URL; data URLs likely work but use public URLs when possible). Omitting them returns `400: keyframe mode requires first_frame and/or last_frame`.
+- There is no text-only video mode: anchor every video with a `first_frame` image.
+- `num_frames` is a **forbidden field** (`400`). Duration and specs are server-side (create response reports e.g. `seconds: "5"`, `size: "720P"`).
+- Create responses return `video_id`/`task_id` with a `task_` prefix — use that string directly with `GET /agnesapi?video_id=...`.
+- Transient errors: `503 video_queue_full` (retry) and `429 rate_limit_exceeded` on the free plan (space out requests, ~40-60s).
+- Generation takes ~3-5 min end-to-end (queued → in_progress → completed ~300s); poll with generous timeout.
 
 Required:
 
 - `model`: fixed as `agnes-video-2.5-flash`
 - `prompt`: text description of the video
+- `mode`: `"keyframe"`
+- `first_frame`: input image URL (unless `last_frame` is the only frame supplied)
 
 Optional:
 
-- `image`: input image URL or image URL array for image-to-video
-- `mode`: generation mode such as `ti2vid` or `keyframes`
-- `height`: integer, default `768`
-- `width`: integer, default `1152`
-- `num_frames`: integer, must be `<= 441` and satisfy `8n + 1`
-- `num_inference_steps`: integer
-- `seed`: integer
-- `frame_rate`: number, supported range `1-60`
+- `last_frame`: second keyframe URL for interpolation between two keyframes
+- `seed`: integer for reproducibility
 - `negative_prompt`: string
-- `extra_body.image`: array for multi-image video or keyframe mode
-- `extra_body.mode`: set to `keyframes` for keyframe animation
 
 Common status values:
 
-- `queued`
+- `queued` / `pending`
 - `in_progress`
 - `completed`
 - `failed`
 
-The create response may include both `task_id` and `video_id`; `video_id` is the recommended lookup identifier for new integrations. The completed response usually includes a video URL. In live responses this may appear as `video_url`, `url`, or `remixed_from_video_id`, plus `size`, `seconds`, and `usage.duration_seconds`.
-
-Recommended video defaults:
-
-- Standard: `width=1152`, `height=768`, `num_frames=121`, `frame_rate=24`
-- Short smoke test: `num_frames=81`, `frame_rate=24`
-- Reproducibility: set `seed`
+The create response may include both `task_id` and `video_id` (same `task_...` value); the completed response includes the video URL at top-level `url`.
 
 ## Error Codes
 
