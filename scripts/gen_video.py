@@ -22,7 +22,7 @@ import urllib.request
 from pathlib import Path
 
 BASE_URL = "https://apihub.agnes-ai.com"
-VIDEO_MODEL = "agnes-video-2.5-flash"
+VIDEO_MODEL = "agnes-video-2.5-flash"  # 默认；备选 agnes-video-v2.0（mode 枚举更宽松）
 
 
 def load_key() -> str:
@@ -47,9 +47,9 @@ def image_to_data_url(path: str) -> str:
 
 
 def submit_video(key: str, prompt: str, image: str = None,
-                 mode: str = "ti2vid", extra: dict = None) -> dict:
+                 mode: str = "ti2vid", model: str = VIDEO_MODEL, extra: dict = None) -> dict:
     payload = {
-        "model": VIDEO_MODEL,
+        "model": model,
         "prompt": prompt,
         "mode": mode,
     }
@@ -136,8 +136,12 @@ def main():
     ap.add_argument("--prompt", required=True, help="英文视频 prompt")
     ap.add_argument("--img", help="图生视频首帧图（本地路径或 URL）")
     ap.add_argument("--out", help="结果下载到的本地路径")
-    ap.add_argument("--mode", default="i2v", choices=["i2v"],
-                    help="生成模式（端点只接受 i2v；纯文生视频也走 i2v，不带首帧图）")
+    ap.add_argument("--mode", default="ti2vid",
+                    help="生成模式：v2.0 接受 ti2vid/keyframes/multi_reference；"
+                         "2.5-flash 网关枚举未确认（实测 ti2vid 报 invalid mode），"
+                         "2.5-flash 上若 400 请换 --model agnes-video-v2.0")
+    ap.add_argument("--model", default="agnes-video-2.5-flash",
+                    help="视频模型（默认 agnes-video-2.5-flash；备选 agnes-video-v2.0）")
     ap.add_argument("--width", type=int, default=None, help="输出宽（可选，端点支持时才传）")
     ap.add_argument("--frames", type=int, default=None, help="帧数（可选，端点支持时才传）")
     ap.add_argument("--timeout", type=int, default=600, help="轮询超时秒（默认 600）")
@@ -158,8 +162,9 @@ def main():
         else:
             raise SystemExit(f"首帧图不存在: {image}")
 
-    print(f"提交视频任务（{VIDEO_MODEL}，mode={args.mode}）...")
-    resp = submit_video(key, args.prompt, image=image, mode=args.mode, extra=extra or None)
+    print(f"提交视频任务（{args.model}，mode={args.mode}）...")
+    resp = submit_video(key, args.prompt, image=image, mode=args.mode,
+                        model=args.model, extra=extra or None)
     video_id = get_video_id(resp)
     if not video_id:
         print(f"未拿到 video_id，响应: {json.dumps(resp, ensure_ascii=False)[:600]}")
