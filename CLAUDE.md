@@ -34,6 +34,7 @@ scripts/        # 辅助 Python 脚本
 | 分镜表生成（CSV→Excel/表格） | `python scripts/storyboard_table.py 03` |
 | 统计全季字数/场次 | `python scripts/check_drafts.py` |
 | 文生图/图生图 | `python scripts/gen_image.py --prompt "..." [--ref 定妆照名] [--out 输出路径]` |
+| 首帧图生成视频 | `python scripts/gen_video.py --prompt "..." --img 05_输出/定妆照/宋栀_v2.png [--last 尾帧图] [--out 05_输出/E1/P01.mp4]` |
 | 查看版本历史 | `git log --oneline` |
 
 ## 出图约定（务必遵守，否则报错卡死）
