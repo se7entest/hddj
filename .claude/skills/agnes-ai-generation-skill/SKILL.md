@@ -100,11 +100,11 @@ python scripts/agnes_api.py smoke-test --video-case text-to-video
 ## Current Validation Notes
 
 - Confirmed locally: skill metadata validation and Python syntax.
-- Confirmed by live API: basic text, streaming text, tool-calling request shape, text-to-image, image-to-image, high-information-density text-to-image, Chinese prompt translation for image/video, completed text-to-video URL retrieval, and completed image-to-video URL retrieval.
+- Confirmed by live API (re-verified 2026-09-15): basic text, streaming text, tool-calling request shape, text-to-image, image-to-image, high-information-density text-to-image, Chinese prompt translation, and **completed keyframe video URL retrieval end-to-end** (submit → queued → in_progress → completed in ~300s, top-level `url`).
+- Video gateway reality (probed 2026-09-15, supersedes older docs): `mode` must be `"keyframe"` and requires `first_frame`/`last_frame` image URLs; `num_frames` is forbidden (400); no text-only video mode; transient `503 video_queue_full` and free-plan `429` rate limits (space requests ~40-60s apart).
 - Caveat: Agnes may accept tool-calling request parameters without consistently returning `tool_calls`; use `smoke-test --strict-tools` when strict tool-call validation is required.
 - Caveat: Agnes Responses API multi-turn function calling is not reliable for agent tool loops; do not rely on it for Codex/Claude-style automatic tool continuation.
-- Supported by the script and smoke-test selector, but not re-run end-to-end in the latest pass: multi-image video and keyframe animation.
-- Not yet confirmed end-to-end: completed URL retrieval for every multi-image video and keyframe animation task. A previous text-to-video task returned a provider-side `division by zero` error, so keep video retries visible and report provider errors clearly.
+- Provider errors (e.g. historical `division by zero`) have not recurred; keep video retries visible and report provider errors clearly.
 
 ## Output Handling
 
